@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Home Team</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<style>
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+:root {
+  --bg:#0d0d0d; --surface:#161616; --surface2:#1f1f1f;
+  --border:#2a2a2a; --border2:#383838; --text:#f0ede6;
+  --muted:#666; --mia:#e8a87c; --cianna:#7cb8e8;
+  --green:#6fcf8a; --red:#e87c7c; --gold:#e8c87c; --purple:#a87ce8;
+}
+body { background:var(--bg); font-family:'DM Sans',sans-serif; color:var(--text); min-height:100vh; background-image:radial-gradient(ellipse at 20% 0%,#1a1208 0%,transparent 50%),radial-gradient(ellipse at 80% 100%,#081218 0%,transparent 50%); }
+
+/* JOIN */
+#join-screen { min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px 24px; text-align:center; }
+.join-logo { font-family:'Syne',sans-serif; font-size:3rem; font-weight:800; letter-spacing:-0.04em; margin-bottom:4px; }
+.join-logo .hl { color:var(--gold); }
+.join-tagline { font-size:0.85rem; color:var(--muted); font-weight:300; margin-bottom:52px; letter-spacing:0.08em; text-transform:uppercase; }
+.join-card { background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:28px 24px; width:100%; max-width:360px; margin-bottom:12px; }
+.join-card h2 { font-family:'Syne',sans-serif; font-size:1.1rem; font-weight:700; margin-bottom:5px; }
+.join-card p { font-size:0.8rem; color:var(--muted); margin-bottom:18px; line-height:1.5; }
+.role-select { display:flex; gap:8px; margin-bottom:14px; }
+.role-btn { flex:1; padding:10px 6px; border-radius:10px; border:1.5px solid var(--border2); background:transparent; color:var(--muted); font-family:'DM Sans',sans-serif; font-size:0.78rem; font-weight:500; cursor:pointer; transition:all 0.18s; }
+.role-btn:hover { border-color:var(--gold); color:var(--text); }
+.role-btn.active[data-role="mia"] { background:rgba(232,168,124,0.15); border-color:var(--mia); color:var(--mia); }
+.role-btn.active[data-role="cianna"] { background:rgba(124,184,232,0.15); border-color:var(--cianna); color:var(--cianna); }
+.role-btn.active[data-role="parent"] { background:rgba(232,200,124,0.15); border-color:var(--gold); color:var(--gold); }
+.join-input { width:100%; background:var(--surface2); border:1px solid var(--border2); border-radius:10px; padding:12px 16px; font-family:'DM Sans',sans-serif; font-size:1rem; color:var(--text); outline:none; text-align:center; letter-spacing:0.2em; font-weight:600; margin-bottom:10px; transition:border-color 0.2s; text-transform:uppercase; }
+.join-input:focus { border-color:var(--gold); }
+.join-input::placeholder { letter-spacing:0; font-weight:300; color:var(--muted); font-size:0.88rem; }
+.btn-primary { width:100%; padding:13px; border-radius:10px; border:none; background:var(--gold); color:#0d0d0d; font-family:'Syne',sans-serif; font-size:0.95rem; font-weight:700; cursor:pointer; transition:all 0.18s; margin-bottom:6px; }
+.btn-primary:hover { opacity:0.88; }
+.btn-primary:disabled { opacity:0.4; cursor:not-allowed; }
+.btn-secondary { width:100%; padding:12px; border-radius:10px; border:1px solid var(--border2); background:transparent; color:var(--muted); font-family:'DM Sans',sans-serif; font-size:0.88rem; font-weight:500; cursor:pointer; transition:all 0.2s; }
+.btn-secondary:hover { border-color:var(--text); color:var(--text); }
+.btn-secondary:disabled { opacity:0.4; cursor:not-allowed; }
+.join-err { color:var(--red); font-size:0.8rem; margin-top:8px; min-height:18px; }
+
+/* APP */
+#app-screen { display:none; }
+header { padding:16px 20px 0; border-bottom:1px solid var(--border); background:rgba(13,13,13,0.92); backdrop-filter:blur(12px); position:sticky; top:0; z-index:100; }
+.hrow { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+.app-logo { font-family:'Syne',sans-serif; font-size:1.2rem; font-weight:800; letter-spacing:-0.03em; }
+.app-logo .hl { color:var(--gold); }
+.user-badge { display:flex; align-items:center; gap:7px; padding:6px 14px; border-radius:999px; border:1px solid var(--border2); font-size:0.72rem; font-weight:600; letter-spacing:0.06em; cursor:pointer; }
+.ubdot { width:7px; height:7px; border-radius:50%; animation:pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+.nav-tabs { display:flex; gap:2px; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+.nav-tab { padding:9px 14px; border-radius:10px 10px 0 0; border:none; background:transparent; color:var(--muted); font-family:'DM Sans',sans-serif; font-size:0.78rem; font-weight:500; cursor:pointer; transition:all 0.18s; border-bottom:2.5px solid transparent; white-space:nowrap; flex-shrink:0; }
+.nav-tab.active { color:var(--gold); border-bottom-color:var(--gold); }
+.nav-tab:hover { color:var(--text); }
+
+main { max-width:900px; margin:0 auto; padding:24px 18px 80px; }
+.screen { display:none; animation:fadeUp 0.3s ease; }
+.screen.active { display:block; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+.section-label { font-size:0.62rem; letter-spacing:0.22em; text-transform:uppercase; color:var(--muted); font-weight:500; margin-bottom:14px; margin-top:28px; }
+
+/* WEEK HEADER */
+.week-header { margin-bottom:20px; }
+.week-title { font-family:'Syne',sans-serif; font-size:1.4rem; font-weight:700; letter-spacing:-0.02em; }
+.week-sub { font-size:0.78rem; color:var(--muted); margin-top:3px; }
+.deadline-pill { display:inline-flex; align-items:center; gap:5px; margin-top:8px; padding:4px 12px; border-radius:999px; font-size:0.72rem; font-weight:600; }
+.deadline-ok { background:rgba(111,207,138,0.12); color:var(--green); border:1px solid rgba(111,207,138,0.2); }
+.deadline-warn { background:rgba(232,200,124,0.12); color:var(--gold); border:1px solid rgba(232,200,124,0.2); }
+.deadline-over { background:rgba(232,124,124,0.12); color:var(--red); border:1px solid rgba(232,124,124,0.2); }
+
+/* PERSON BLOCK */
+.person-col { background:var(--surface); border:1px solid var(--border); border-radius:18px; padding:18px; margin-bottom:14px; transition:border-color 0.3s; }
+.person-col.has-overdue { border-color:rgba(232,124,124,0.4); }
+.person-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; gap:8px; }
+.person-name { font-family:'Syne',sans-serif; font-size:1rem; font-weight:700; }
+.person-meta { display:flex; align-items:center; gap:8px; }
+.time-pill { padding:3px 10px; border-radius:999px; font-size:0.65rem; font-weight:600; }
+.done-txt { font-size:0.68rem; color:var(--muted); }
+.progress-bar { height:4px; background:var(--border); border-radius:999px; overflow:hidden; margin-bottom:14px; }
+.progress-fill { height:100%; border-radius:999px; transition:width 0.5s ease; }
+
+/* CHORE ITEMS */
+.chore-item { display:flex; align-items:center; gap:12px; padding:13px 14px; border-radius:12px; background:var(--surface2); border:1px solid var(--border); margin-bottom:8px; transition:all 0.2s; cursor:pointer; position:relative; overflow:hidden; }
+.chore-item:hover { border-color:var(--border2); transform:translateX(2px); }
+.chore-item.done { opacity:0.35; }
+.chore-item.done .chore-name { text-decoration:line-through; }
+.chore-item.missed { border-color:rgba(232,124,124,0.4); background:rgba(232,124,124,0.05); }
+.chore-item.missed::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--red); border-radius:3px 0 0 3px; }
+
+.chore-check { width:22px; height:22px; border-radius:50%; border:1.5px solid var(--border2); display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all 0.2s; }
+.chore-item.done .chore-check { border-color:var(--green); background:var(--green); }
+.chore-item.done .chore-check::after { content:'✓'; font-size:11px; color:#0d0d0d; font-weight:700; }
+.chore-item.missed .chore-check { border-color:var(--red); }
+
+.chore-info { flex:1; }
+.chore-name { font-size:0.88rem; font-weight:500; margin-bottom:4px; }
+.chore-badges { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.chore-mins { font-size:0.66rem; color:var(--muted); }
+.badge { font-size:0.58rem; padding:2px 8px; border-radius:999px; font-weight:600; letter-spacing:0.05em; }
+.badge-missed { background:rgba(232,124,124,0.15); color:var(--red); }
+.badge-done { background:rgba(111,207,138,0.12); color:var(--green); }
+.badge-alt { background:rgba(168,124,232,0.1); color:var(--purple); }
+.badge-personal { background:rgba(232,200,124,0.1); color:var(--gold); }
+.badge-poop { background:rgba(124,184,232,0.1); color:var(--cianna); }
+
+.chore-done-time { font-size:0.65rem; color:var(--green); margin-top:2px; }
+
+.parent-note { background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:10px 14px; font-size:0.78rem; color:var(--muted); text-align:center; margin-top:8px; }
+
+/* FEED */
+.feed-empty { text-align:center; padding:48px 16px; color:var(--muted); font-size:0.85rem; }
+.feed-ei { font-size:2.5rem; margin-bottom:10px; }
+.feed-item { display:flex; align-items:flex-start; gap:12px; padding:14px 16px; background:var(--surface); border:1px solid var(--border); border-radius:14px; margin-bottom:10px; animation:fadeUp 0.25s ease; }
+.feed-avatar { width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1rem; flex-shrink:0; }
+.feed-body { flex:1; }
+.feed-who { font-weight:700; }
+.feed-title { font-size:0.85rem; font-weight:500; margin-bottom:2px; }
+.feed-chore { font-size:0.75rem; color:var(--muted); }
+.feed-meta { font-size:0.68rem; margin-top:3px; }
+.feed-green { color:var(--green); }
+.feed-red { color:var(--red); }
+
+/* CALENDAR HEATMAP */
+.cal-nav { display:flex; align-items:center; gap:12px; margin-bottom:20px; }
+.cal-nav-btn { padding:7px 14px; border-radius:999px; border:1px solid var(--border2); background:transparent; color:var(--muted); font-size:0.8rem; cursor:pointer; transition:all 0.18s; }
+.cal-nav-btn:hover { border-color:var(--text); color:var(--text); }
+.cal-month-title { font-family:'Syne',sans-serif; font-size:1.1rem; font-weight:700; flex:1; }
+
+.chore-filter-row { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:16px; }
+.chore-filter-btn { padding:5px 12px; border-radius:999px; border:1px solid var(--border2); background:transparent; color:var(--muted); font-size:0.72rem; font-weight:500; cursor:pointer; transition:all 0.18s; white-space:nowrap; }
+.chore-filter-btn.active { border-color:var(--gold); color:var(--gold); background:rgba(232,200,124,0.1); }
+
+.cal-grid-wrap { overflow-x:auto; }
+.cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; min-width:280px; }
+.cal-day-header { font-size:0.6rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); text-align:center; padding:4px 0 8px; }
+.cal-day { aspect-ratio:1; border-radius:8px; position:relative; cursor:default; transition:all 0.15s; border:1px solid transparent; }
+.cal-day.empty { background:transparent; border:none; }
+.cal-day.no-chores { background:var(--surface2); }
+.cal-day.future { background:var(--surface); opacity:0.4; }
+.cal-day.today-day { border-color:var(--gold) !important; }
+
+/* Heatmap colours by completion */
+.cal-day.pct-100 { background:rgba(111,207,138,0.35); }
+.cal-day.pct-high { background:rgba(111,207,138,0.2); }
+.cal-day.pct-mid { background:rgba(232,200,124,0.2); }
+.cal-day.pct-low { background:rgba(232,124,124,0.15); }
+.cal-day.pct-zero { background:rgba(232,124,124,0.3); }
+
+.cal-day-num { font-size:0.65rem; font-weight:600; color:var(--text); padding:3px 5px; line-height:1; }
+.cal-day-dots { display:flex; flex-wrap:wrap; gap:2px; padding:0 3px 3px; }
+.cal-dot { width:5px; height:5px; border-radius:50%; flex-shrink:0; }
+
+.cal-legend { display:flex; gap:12px; align-items:center; margin-top:12px; flex-wrap:wrap; }
+.legend-item { display:flex; align-items:center; gap:5px; font-size:0.68rem; color:var(--muted); }
+.legend-swatch { width:12px; height:12px; border-radius:3px; }
+
+.cal-chore-detail { margin-top:20px; }
+.cal-chore-row { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--border); }
+.cal-chore-row:last-child { border-bottom:none; }
+.cal-chore-name { flex:1; font-size:0.82rem; font-weight:500; }
+.cal-chore-dates { font-size:0.72rem; color:var(--muted); }
+.cal-chore-gap { font-size:0.7rem; padding:2px 8px; border-radius:999px; font-weight:600; }
+.gap-good { background:rgba(111,207,138,0.12); color:var(--green); }
+.gap-warn { background:rgba(232,200,124,0.12); color:var(--gold); }
+.gap-bad { background:rgba(232,124,124,0.12); color:var(--red); }
+
+/* HISTORY */
+.history-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:18px; margin-bottom:12px; }
+.history-card h3 { font-family:'Syne',sans-serif; font-size:0.9rem; font-weight:700; margin-bottom:14px; display:flex; justify-content:space-between; }
+.history-row { display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border); font-size:0.82rem; }
+.history-row:last-child { border-bottom:none; }
+.pct-pill { font-size:0.7rem; padding:2px 9px; border-radius:999px; font-weight:700; }
+.pct-great { background:rgba(111,207,138,0.15); color:var(--green); }
+.pct-ok { background:rgba(232,200,124,0.15); color:var(--gold); }
+.pct-poor { background:rgba(232,124,124,0.15); color:var(--red); }
+
+/* OVERVIEW */
+.ov-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:18px; margin-bottom:12px; }
+.ov-card h3 { font-family:'Syne',sans-serif; font-size:0.9rem; font-weight:700; margin-bottom:12px; }
+.ov-item { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--border); font-size:0.8rem; }
+.ov-item:last-child { border-bottom:none; }
+.ov-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
+@media(max-width:500px){ .ov-grid{ grid-template-columns:1fr; } }
+
+/* SHARE */
+.overlay { position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:199; display:none; }
+.share-sheet { position:fixed; bottom:0; left:0; right:0; background:var(--surface); border-top:1px solid var(--border); border-radius:20px 20px 0 0; padding:28px 24px 44px; z-index:200; transform:translateY(100%); transition:transform 0.3s ease; }
+.share-sheet.open { transform:translateY(0); }
+.ss-title { font-family:'Syne',sans-serif; font-size:1.1rem; font-weight:700; margin-bottom:6px; }
+.ss-sub { font-size:0.8rem; color:var(--muted); margin-bottom:20px; line-height:1.5; }
+.code-box { background:var(--surface2); border:1px solid var(--border2); border-radius:12px; padding:16px; text-align:center; font-family:'Syne',sans-serif; font-size:2.2rem; font-weight:800; letter-spacing:0.3em; color:var(--gold); margin-bottom:14px; }
+.ss-roles { display:flex; gap:8px; margin-bottom:16px; }
+.ss-role { flex:1; padding:10px; border-radius:10px; border:1px solid var(--border2); text-align:center; font-size:0.75rem; font-weight:600; }
+.ss-role.mia { border-color:var(--mia); color:var(--mia); }
+.ss-role.cianna { border-color:var(--cianna); color:var(--cianna); }
+.ss-role.parent { border-color:var(--gold); color:var(--gold); }
+.btn-copy-ss { width:100%; padding:13px; border-radius:10px; background:var(--gold); color:#0d0d0d; border:none; font-family:'Syne',sans-serif; font-weight:700; font-size:0.9rem; cursor:pointer; margin-bottom:8px; }
+.btn-close-ss { width:100%; padding:11px; border-radius:10px; border:1px solid var(--border2); background:transparent; color:var(--muted); font-family:'DM Sans',sans-serif; font-size:0.87rem; cursor:pointer; }
+</style>
+</head>
+<body>
+
+<div id="join-screen">
+  <div class="join-logo">Home<span class="hl">Team</span></div>
+  <p class="join-tagline">Household chores · shared fairly</p>
+  <div class="join-card">
+    <h2>Who are you?</h2>
+    <p>Select your role then enter the room code</p>
+    <div class="role-select">
+      <button class="role-btn" data-role="mia" onclick="selectRole('mia',this)">🧡 Mia</button>
+      <button class="role-btn" data-role="cianna" onclick="selectRole('cianna',this)">💙 Cianna</button>
+      <button class="role-btn" data-role="parent" onclick="selectRole('parent',this)">👀 Mum</button>
+    </div>
+    <input class="join-input" id="code-input" placeholder="Room code" maxlength="8">
+    <button class="btn-primary" id="btn-join" onclick="joinRoom()">Join →</button>
+    <div class="join-err" id="join-err"></div>
+  </div>
+  <div class="join-card">
+    <h2>Create a new room</h2>
+    <p>Set up for the first time — you'll get a code to share</p>
+    <button class="btn-secondary" id="btn-create" onclick="createRoom()">✦ Create room</button>
+  </div>
+</div>
+
+<div id="app-screen">
+  <header>
+    <div class="hrow">
+      <div class="app-logo">Home<span class="hl">Team</span></div>
+      <div class="user-badge" onclick="openShare()">
+        <div class="ubdot" id="ubdot"></div>
+        <span id="user-lbl">——</span>
+      </div>
+    </div>
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="showTab('chores',this)">📋 This Week</button>
+      <button class="nav-tab" id="tab-feed" onclick="showTab('feed',this)" style="display:none">🔔 Activity</button>
+      <button class="nav-tab" id="tab-calendar" onclick="showTab('calendar',this)" style="display:none">📅 Calendar</button>
+      <button class="nav-tab" id="tab-history" onclick="showTab('history',this)" style="display:none">📈 History</button>
+      <button class="nav-tab" onclick="showTab('overview',this)">📊 How it works</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- THIS WEEK -->
+    <div class="screen active" id="screen-chores">
+      <div class="week-header">
+        <div class="week-title" id="week-title">—</div>
+        <div class="week-sub">Complete all chores by Sunday midnight</div>
+        <div class="deadline-pill deadline-ok" id="deadline-pill">— days left</div>
+      </div>
+      <div id="chores-content"></div>
+    </div>
+
+    <!-- ACTIVITY FEED -->
+    <div class="screen" id="screen-feed">
+      <div class="section-label" style="margin-top:0">Real-time activity log</div>
+      <div id="feed-content"><div class="feed-empty"><div class="feed-ei">🔔</div>Activity appears here as chores are ticked off</div></div>
+    </div>
+
+    <!-- CALENDAR HEATMAP -->
+    <div class="screen" id="screen-calendar">
+      <div class="section-label" style="margin-top:0">Completion calendar</div>
+      <div class="cal-nav">
+        <button class="cal-nav-btn" onclick="calNav(-1)">← Prev</button>
+        <div class="cal-month-title" id="cal-month-title">—</div>
+        <button class="cal-nav-btn" onclick="calNav(1)">Next →</button>
+      </div>
+      <div class="chore-filter-row" id="chore-filters"></div>
+      <div class="cal-grid-wrap">
+        <div class="cal-grid" id="cal-grid"></div>
+      </div>
+      <div class="cal-legend">
+        <div class="legend-item"><div class="legend-swatch" style="background:rgba(111,207,138,0.35)"></div>All done</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:rgba(111,207,138,0.2)"></div>Mostly done</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:rgba(232,200,124,0.2)"></div>Partial</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:rgba(232,124,124,0.3)"></div>Missed</div>
+      </div>
+      <div class="cal-chore-detail" id="cal-chore-detail"></div>
+    </div>
+
+    <!-- HISTORY -->
+    <div class="screen" id="screen-history">
+      <div class="section-label" style="margin-top:0">Weekly completion history</div>
+      <div id="history-content"><div class="feed-empty"><div class="feed-ei">📈</div>History builds week by week</div></div>
+    </div>
+
+    <!-- HOW IT WORKS -->
+    <div class="screen" id="screen-overview">
+      <div class="section-label" style="margin-top:0">The system</div>
+      <div class="ov-card">
+        <h3>📋 Weekly chores — rotating bundles</h3>
+        <div class="ov-item"><span>Bundle A weeks: Mia</span><span style="color:var(--muted);font-size:0.75rem">Vacuum, Mop, Sweep porch</span></div>
+        <div class="ov-item"><span>Bundle B weeks: Mia</span><span style="color:var(--muted);font-size:0.75rem">Bathroom, Kitchen, Windows</span></div>
+        <div class="ov-item"><span>Cianna always gets the opposite bundle</span></div>
+        <div class="ov-item"><span>Bundles swap every Monday</span></div>
+      </div>
+      <div class="ov-card">
+        <h3>⏰ Rules</h3>
+        <div class="ov-item"><span>All chores due by Sunday midnight each week</span></div>
+        <div class="ov-item"><span>Flexible — do them any day, in any order</span></div>
+        <div class="ov-item"><span>Anything not done = missed, stays on record</span></div>
+        <div class="ov-item"><span>Dog poop every 2 days — alternating</span></div>
+        <div class="ov-item"><span>Cook dinner once a week — alternating weekly</span></div>
+        <div class="ov-item"><span>Personal mirrors & windows — always yours</span></div>
+      </div>
+      <div class="ov-grid">
+        <div class="ov-card">
+          <h3 style="color:var(--mia)">🧡 Mia's Bundle A</h3>
+          <div class="ov-item"><span>Vacuum</span><span style="color:var(--muted)">30 min</span></div>
+          <div class="ov-item"><span>Mop floors</span><span style="color:var(--muted)">20 min</span></div>
+          <div class="ov-item"><span>Sweep front porch</span><span style="color:var(--muted)">10 min</span></div>
+        </div>
+        <div class="ov-card">
+          <h3 style="color:var(--cianna)">💙 Bundle B</h3>
+          <div class="ov-item"><span>Bathroom</span><span style="color:var(--muted)">30 min</span></div>
+          <div class="ov-item"><span>Kitchen cupboards & fridge</span><span style="color:var(--muted)">20 min</span></div>
+          <div class="ov-item"><span>Windows & outside table</span><span style="color:var(--muted)">15 min</span></div>
+        </div>
+      </div>
+      <div class="ov-card">
+        <h3>⏱ Time commitment</h3>
+        <div class="ov-item"><span>Bundle chores</span><span style="color:var(--muted)">~60–65 min/wk</span></div>
+        <div class="ov-item"><span>Personal mirrors & windows</span><span style="color:var(--muted)">~15 min/wk</span></div>
+        <div class="ov-item"><span>Dog poop (~3-4x)</span><span style="color:var(--muted)">~15–20 min/wk</span></div>
+        <div class="ov-item"><span>Cook dinner (every other week)</span><span style="color:var(--muted)">~60 min</span></div>
+        <div class="ov-item" style="font-weight:600"><span>Daily average</span><span style="color:var(--gold)">~15–20 min/day</span></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="overlay" id="overlay" onclick="closeShare()"></div>
+<div class="share-sheet" id="share-sheet">
+  <div class="ss-title">Share HomeTeam 🏠</div>
+  <div class="ss-sub">Everyone opens the same link, selects their role and enters this code.</div>
+  <div class="code-box" id="share-code">——</div>
+  <div class="ss-roles">
+    <div class="ss-role mia">🧡 Mia</div>
+    <div class="ss-role cianna">💙 Cianna</div>
+    <div class="ss-role parent">👀 Mum</div>
+  </div>
+  <button class="btn-copy-ss" onclick="copyCode()">Copy room code</button>
+  <button class="btn-close-ss" onclick="closeShare()">Close</button>
+</div>
+
+<script>
+const firebaseConfig={apiKey:"AIzaSyDc0z3kxfRE4suh29U2I6X43YbKRrbF_1I",authDomain:"life-together-7c59a.firebaseapp.com",databaseURL:"https://life-together-7c59a-default-rtdb.firebaseio.com",projectId:"life-together-7c59a",storageBucket:"life-together-7c59a.firebasestorage.app",messagingSenderId:"364322186667",appId:"1:364322186667:web:1c6ba570de78480b5d9eee"};
+firebase.initializeApp(firebaseConfig);
+const db=firebase.database();
+
+// ── CHORE DEFINITIONS ──
+const BUNDLE_A=[
+  {id:'vacuum',name:'Vacuum (tiles & carpet)',mins:30,bundle:'A'},
+  {id:'mop',name:'Mop floors',mins:20,bundle:'A'},
+  {id:'porch',name:'Sweep front porch',mins:10,bundle:'A'},
+];
+const BUNDLE_B=[
+  {id:'bathroom',name:'Girls bathroom (shower, sink, toilet)',mins:30,bundle:'B'},
+  {id:'kitchen',name:'Wipe kitchen cupboards & fridge',mins:20,bundle:'B'},
+  {id:'windows',name:'Kitchen windows & outside table',mins:15,bundle:'B'},
+];
+const PERSONAL={id:'mirrors',name:'Clean your own mirrors & windows',mins:15,bundle:'personal'};
+const POOP={id:'poop',name:'Pick up dog poop',mins:10,bundle:'poop'};
+const COOK={id:'cook',name:'Cook dinner for the family',mins:60,bundle:'cook'};
+const ALL_CHORES=[...BUNDLE_A,...BUNDLE_B,PERSONAL,POOP,COOK];
+
+const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const SHORT_MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const DAY_HEADERS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+let roomCode=null,state=null,myRole=null,selectedRole=null;
+let calYear=new Date().getFullYear(),calMonth=new Date().getMonth();
+let calChoreFilter='all';
+
+// ── HELPERS ──
+function getMondayOfWeek(d){const dt=new Date(d);dt.setHours(0,0,0,0);const day=dt.getDay();dt.setDate(dt.getDate()-(day===0?6:day-1));return dt;}
+function getWeekKey(d){return getMondayOfWeek(d||new Date()).toISOString().split('T')[0];}
+function getDateKey(d){const dt=d||new Date();return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');}
+function getWeekNum(d){const dt=d||new Date();const s=new Date(dt.getFullYear(),0,1);return Math.ceil(((dt-s)/86400000+s.getDay()+1)/7);}
+function getDayNum(d){return Math.floor((d||new Date()).getTime()/86400000);}
+function isWeekA(d){return getWeekNum(d)%2===0;}
+function isMiaPoop(d){return Math.floor(getDayNum(d)/2)%2===0;}
+function isMiaCook(d){return getWeekNum(d)%2===0;}
+function daysUntilSunday(){const d=new Date();const dow=d.getDay();return dow===0?0:7-dow;}
+function formatDateTime(ts){return new Date(ts).toLocaleString('en-AU',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});}
+function formatDate(d){return d.getDate()+' '+SHORT_MONTHS[d.getMonth()];}
+
+// ── CHORE ASSIGNMENT ──
+function getChoresForPerson(person,weekDate){
+  const wk=weekDate||new Date();
+  const wkA=isWeekA(wk);
+  const miaPoop=isMiaPoop();
+  const miaCook=isMiaCook(wk);
+  const wkKey=getWeekKey(wk);
+  const dkPoop=getDateKey();
+  const chores=[];
+
+  // Bundle
+  const myBundle=((person==='mia'&&wkA)||(person==='cianna'&&!wkA))?BUNDLE_A:BUNDLE_B;
+  myBundle.forEach(c=>chores.push({...c,suffix:wkKey}));
+
+  // Personal
+  chores.push({...PERSONAL,suffix:wkKey});
+
+  // Poop - today only if their turn
+  const poopMine=(person==='mia'&&miaPoop)||(person==='cianna'&&!miaPoop);
+  if(poopMine) chores.push({...POOP,suffix:dkPoop});
+
+  // Cook - this week if their turn
+  const cookMine=(person==='mia'&&miaCook)||(person==='cianna'&&!miaCook);
+  if(cookMine) chores.push({...COOK,suffix:wkKey});
+
+  return chores;
+}
+
+function compKey(person,id,suffix){return person+'_'+id+'_'+suffix;}
+function isDone(person,id,suffix){return !!(state.completions&&state.completions[compKey(person,id,suffix)]);}
+function getDoneTime(person,id,suffix){return state.completions&&state.completions[compKey(person,id,suffix)+'_time'];}
+
+// ── ROLE / ROOM ──
+function selectRole(role,btn){selectedRole=role;document.querySelectorAll('.role-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');}
+function genCode(){const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';return Array.from({length:5},()=>c[Math.floor(Math.random()*c.length)]).join('');}
+
+async function createRoom(){
+  const btn=document.getElementById('btn-create');btn.disabled=true;btn.textContent='Creating…';
+  try{roomCode=genCode();const s={completions:{},feed:[]};await db.ref('ht5/'+roomCode).set(s);localStorage.setItem('ht5r',roomCode);localStorage.setItem('ht5ro','parent');myRole='parent';state=s;enterApp();}
+  catch(e){alert('Error: '+e.message);}
+  finally{btn.disabled=false;btn.textContent='✦ Create room';}
+}
+
+async function joinRoom(){
+  if(!selectedRole){showErr('Select your role first');return;}
+  const code=document.getElementById('code-input').value.trim().toUpperCase();
+  if(!code){showErr('Enter a room code');return;}
+  const btn=document.getElementById('btn-join');btn.disabled=true;btn.textContent='Joining…';showErr('');
+  try{
+    const snap=await db.ref('ht5/'+code).once('value');
+    if(!snap.exists()){showErr('Room not found — check the code.');return;}
+    roomCode=code;myRole=selectedRole;state=snap.val();
+    if(!state.completions)state.completions={};if(!state.feed)state.feed=[];
+    localStorage.setItem('ht5r',roomCode);localStorage.setItem('ht5ro',myRole);enterApp();
+  }catch(e){showErr('Connection error: '+e.message);}
+  finally{btn.disabled=false;btn.textContent='Join →';}
+}
+
+function showErr(msg){document.getElementById('join-err').textContent=msg;}
+
+function enterApp(){
+  document.getElementById('join-screen').style.display='none';
+  document.getElementById('app-screen').style.display='block';
+  const rc={mia:'var(--mia)',cianna:'var(--cianna)',parent:'var(--gold)'};
+  const rl={mia:'🧡 Mia',cianna:'💙 Cianna',parent:'👀 Mum'};
+  document.getElementById('ubdot').style.background=rc[myRole];
+  document.getElementById('user-lbl').textContent=rl[myRole];
+  document.getElementById('share-code').textContent=roomCode;
+  if(myRole==='parent'){
+    ['tab-feed','tab-calendar','tab-history'].forEach(id=>document.getElementById(id).style.display='block');
+  }
+  db.ref('ht5/'+roomCode).on('value',snap=>{
+    if(snap.exists()){state=snap.val();if(!state.completions)state.completions={};if(!state.feed)state.feed=[];renderAll();}
+  });
+  renderAll();
+}
+
+function renderAll(){renderChores();renderFeed();renderCalendar();renderHistory();}
+
+async function persist(){try{await db.ref('ht5/'+roomCode).set(state);}catch(e){console.error(e);}}
+
+// ── TOGGLE ──
+async function toggleChore(person,id,suffix){
+  if(myRole==='parent'||myRole!==person)return;
+  const key=compKey(person,id,suffix);
+  if(!state.completions)state.completions={};
+  const nowDone=!state.completions[key];
+  state.completions[key]=nowDone;
+  if(nowDone)state.completions[key+'_time']=Date.now();
+  else delete state.completions[key+'_time'];
+  // Feed
+  if(!state.feed)state.feed=[];
+  const chore=ALL_CHORES.find(c=>c.id===id);
+  state.feed.unshift({person,choreName:chore?chore.name:id,done:nowDone,time:Date.now(),dateKey:getDateKey()});
+  if(state.feed.length>150)state.feed=state.feed.slice(0,150);
+  renderAll();await persist();
+}
+
+// ── WEEK DEADLINE ──
+function updateDeadline(){
+  const d=daysUntilSunday();
+  const pill=document.getElementById('deadline-pill');
+  if(d===0){pill.textContent='Due tonight!';pill.className='deadline-pill deadline-over';}
+  else if(d<=2){pill.textContent=d+' day'+(d>1?'s':'')+' left';pill.className='deadline-pill deadline-warn';}
+  else{pill.textContent=d+' days left';pill.className='deadline-pill deadline-ok';}
+}
+
+// ── RENDER CHORES ──
+function renderChores(){
+  if(!state)return;
+  const mon=getMondayOfWeek(new Date());
+  const sun=new Date(mon);sun.setDate(mon.getDate()+6);
+  document.getElementById('week-title').textContent=formatDate(mon)+' – '+formatDate(sun);
+  updateDeadline();
+
+  function block(name,person,color){
+    const chores=getChoresForPerson(person);
+    const done=chores.filter(c=>isDone(person,c.id,c.suffix)).length;
+    const total=chores.reduce((s,c)=>s+c.mins,0);
+    const pct=chores.length?Math.round(done/chores.length*100):0;
+    const isOver=daysUntilSunday()===0&&done<chores.length;
+    const click=myRole===person;
+
+    let h='<div class="person-col '+(isOver?'has-overdue':'')+'" >'+
+      '<div class="person-header">'+
+        '<div class="person-name" style="color:'+color+'">'+name+(isOver?' ⚠️':'')+' </div>'+
+        '<div class="person-meta">'+
+          '<span class="time-pill" style="background:'+color+'22;color:'+color+'">⏱ '+total+' min/wk</span>'+
+          '<span class="done-txt">'+done+'/'+chores.length+' done</span>'+
+        '</div>'+
+      '</div>'+
+      '<div class="progress-bar"><div class="progress-fill" style="width:'+pct+'%;background:'+(pct===100?'var(--green)':color)+'"></div></div>';
+
+    chores.forEach(c=>{
+      const d=isDone(person,c.id,c.suffix);
+      const doneTime=getDoneTime(person,c.id,c.suffix);
+      const missed=isOver&&!d;
+      const cls=d?'done':missed?'missed':'';
+      let badges='<span class="chore-mins">⏱ '+c.mins+' min</span>';
+      if(c.bundle==='poop')badges+=' <span class="badge badge-poop">Every 2 days</span>';
+      if(c.bundle==='cook')badges+=' <span class="badge badge-alt">Alternating weekly</span>';
+      if(c.bundle==='personal')badges+=' <span class="badge badge-personal">Personal</span>';
+      if(missed)badges+=' <span class="badge badge-missed">⚠️ Missed</span>';
+      if(d&&doneTime)badges+=' <span class="badge badge-done">✓ Done</span>';
+
+      h+='<div class="chore-item '+cls+'" '+(click?'onclick="toggleChore(\''+person+'\',\''+c.id+'\',\''+c.suffix+'\')"':'')+'>'+
+        '<div class="chore-check"></div>'+
+        '<div class="chore-info">'+
+          '<div class="chore-name">'+c.name+'</div>'+
+          '<div class="chore-badges">'+badges+'</div>'+
+          (d&&doneTime?'<div class="chore-done-time">Completed '+formatDateTime(doneTime)+'</div>':'')+
+        '</div>'+
+      '</div>';
+    });
+
+    if(myRole==='parent')h+='<div class="parent-note">👀 View only — updates in real time</div>';
+    h+='</div>';
+    return h;
+  }
+
+  document.getElementById('chores-content').innerHTML=
+    block('Mia','mia','var(--mia)')+
+    block('Cianna','cianna','var(--cianna)');
+}
+
+// ── FEED ──
+function renderFeed(){
+  if(!state||!state.feed)return;
+  const c=document.getElementById('feed-content');
+  if(!state.feed.length){c.innerHTML='<div class="feed-empty"><div class="feed-ei">🔔</div>Activity appears here as chores are ticked off</div>';return;}
+  const rc={mia:'var(--mia)',cianna:'var(--cianna)'};
+  const re={mia:'🧡',cianna:'💙'};
+  c.innerHTML=state.feed.map(e=>{
+    const t=formatDateTime(e.time);
+    return '<div class="feed-item">'+
+      '<div class="feed-avatar" style="background:'+rc[e.person]+'22">'+re[e.person]+'</div>'+
+      '<div class="feed-body">'+
+        '<div class="feed-title"><span class="feed-who" style="color:'+rc[e.person]+'">'+(e.person==='mia'?'Mia':'Cianna')+'</span> '+(e.done?'completed':'unchecked')+'</div>'+
+        '<div class="feed-chore">'+e.choreName+'</div>'+
+        '<div class="feed-meta '+(e.done?'feed-green':'feed-red')+'">'+(e.done?'✅ Done':'↩️ Undone')+' · '+t+'</div>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+
+// ── CALENDAR HEATMAP ──
+function calNav(dir){
+  calMonth+=dir;
+  if(calMonth>11){calMonth=0;calYear++;}
+  if(calMonth<0){calMonth=11;calYear--;}
+  renderCalendar();
+}
+
+function renderCalendar(){
+  if(!state)return;
+  document.getElementById('cal-month-title').textContent=MONTHS[calMonth]+' '+calYear;
+
+  // Build chore filter buttons
+  const choreNames=['all',...ALL_CHORES.map(c=>c.name)];
+  const filterDiv=document.getElementById('chore-filters');
+  filterDiv.innerHTML=choreNames.map(n=>
+    '<button class="chore-filter-btn '+(calChoreFilter===n?'active':'')+'" onclick="setCalFilter(\''+n.replace(/'/g,"\\'")+'\')">'+(n==='all'?'All chores':n)+'</button>'
+  ).join('');
+
+  // Get all completion timestamps from feed
+  const dayMap={}; // dateKey -> [{person, choreName, done}]
+  if(state.feed){
+    state.feed.forEach(e=>{
+      if(!e.dateKey)return;
+      const d=new Date(e.time);
+      if(d.getFullYear()!==calYear||d.getMonth()!==calMonth)return;
+      if(calChoreFilter!=='all'&&e.choreName!==calChoreFilter)return;
+      if(!dayMap[e.dateKey])dayMap[e.dateKey]=[];
+      dayMap[e.dateKey].push(e);
+    });
+  }
+
+  // Calendar grid
+  const firstDay=new Date(calYear,calMonth,1);
+  const lastDay=new Date(calYear,calMonth+1,0);
+  const startDow=firstDay.getDay()===0?6:firstDay.getDay()-1; // Mon=0
+  const todayKey=getDateKey();
+
+  const grid=document.getElementById('cal-grid');
+  let html=DAY_HEADERS.map(d=>'<div class="cal-day-header">'+d+'</div>').join('');
+
+  // Empty cells before first day
+  for(let i=0;i<startDow;i++) html+='<div class="cal-day empty"></div>';
+
+  const today=new Date();today.setHours(0,0,0,0);
+
+  for(let day=1;day<=lastDay.getDate();day++){
+    const date=new Date(calYear,calMonth,day);
+    const dk=getDateKey(date);
+    const isFuture=date>today;
+    const isToday=dk===todayKey;
+    const entries=dayMap[dk]||[];
+    const doneEntries=entries.filter(e=>e.done);
+
+    let cls='cal-day';
+    let dotHtml='';
+
+    if(isFuture){
+      cls+=' future';
+    } else if(!entries.length){
+      cls+=' no-chores';
+    } else {
+      const pct=entries.length>0?doneEntries.length/entries.length:0;
+      if(pct===1)cls+=' pct-100';
+      else if(pct>=0.75)cls+=' pct-high';
+      else if(pct>=0.5)cls+=' pct-mid';
+      else if(pct>0)cls+=' pct-low';
+      else cls+=' pct-zero';
+
+      // Person dots
+      const miaD=doneEntries.some(e=>e.person==='mia');
+      const ciannaD=doneEntries.some(e=>e.person==='cianna');
+      if(miaD)dotHtml+='<div class="cal-dot" style="background:var(--mia)"></div>';
+      if(ciannaD)dotHtml+='<div class="cal-dot" style="background:var(--cianna)"></div>';
+    }
+
+    if(isToday)cls+=' today-day';
+
+    html+='<div class="'+cls+'">'+
+      '<div class="cal-day-num">'+day+'</div>'+
+      (dotHtml?'<div class="cal-day-dots">'+dotHtml+'</div>':'')+
+    '</div>';
+  }
+
+  grid.innerHTML=html;
+
+  // Chore frequency analysis
+  renderChoreDetail();
+}
+
+function setCalFilter(name){
+  calChoreFilter=name;
+  renderCalendar();
+}
+
+function renderChoreDetail(){
+  if(!state||!state.feed)return;
+  const detail=document.getElementById('cal-chore-detail');
+
+  // For each chore, find last completion dates
+  const choreMap={};
+  if(state.feed){
+    state.feed.filter(e=>e.done).forEach(e=>{
+      const k=e.choreName;
+      if(!choreMap[k])choreMap[k]=[];
+      choreMap[k].push(new Date(e.time));
+    });
+  }
+
+  if(!Object.keys(choreMap).length){detail.innerHTML='';return;}
+
+  let h='<div class="section-label">Frequency analysis</div>';
+  Object.keys(choreMap).sort().forEach(name=>{
+    const dates=choreMap[name].sort((a,b)=>b-a);
+    const last=dates[0];
+    const daysSince=Math.floor((new Date()-last)/86400000);
+    let gapClass='gap-good',gapLabel=daysSince+'d ago';
+    if(daysSince>14)gapClass='gap-bad';
+    else if(daysSince>7)gapClass='gap-warn';
+
+    // Find max gap between completions
+    let maxGap=0;
+    for(let i=0;i<dates.length-1;i++){
+      const gap=Math.floor((dates[i]-dates[i+1])/86400000);
+      if(gap>maxGap)maxGap=gap;
+    }
+
+    h+='<div class="cal-chore-row">'+
+      '<div class="cal-chore-name">'+name+'</div>'+
+      '<div class="cal-chore-dates">'+dates.length+'x done</div>'+
+      (maxGap>0?'<div class="cal-chore-gap '+(maxGap>14?'gap-bad':maxGap>7?'gap-warn':'gap-good')+'">max gap: '+maxGap+'d</div>':'')+
+      '<div class="cal-chore-gap '+gapClass+'">'+gapLabel+'</div>'+
+    '</div>';
+  });
+  detail.innerHTML=h;
+}
+
+// ── HISTORY ──
+function renderHistory(){
+  if(!state)return;
+  // Group feed by weekKey
+  const weeks={};
+  if(state.feed){
+    state.feed.forEach(e=>{
+      if(!e.done)return;
+      // Determine week
+      const d=new Date(e.time);
+      const wk=getWeekKey(d);
+      if(!weeks[wk])weeks[wk]={mia:{done:0,total:0},cianna:{done:0,total:0},label:formatDate(getMondayOfWeek(d))};
+      weeks[wk][e.person].done++;
+    });
+  }
+
+  const keys=Object.keys(weeks).sort().reverse();
+  if(!keys.length){document.getElementById('history-content').innerHTML='<div class="feed-empty"><div class="feed-ei">📈</div>History builds week by week</div>';return;}
+
+  document.getElementById('history-content').innerHTML=keys.map(wk=>{
+    const w=weeks[wk];
+    // Estimate total chores per person per week (~6 chores)
+    const miaPct=Math.min(100,Math.round(w.mia.done/6*100));
+    const ciannaPct=Math.min(100,Math.round(w.cianna.done/6*100));
+    const pClass=p=>p>=80?'pct-great':p>=50?'pct-ok':'pct-poor';
+    return '<div class="history-card">'+
+      '<h3>Week of '+w.label+'</h3>'+
+      '<div class="history-row">'+
+        '<span style="color:var(--mia)">🧡 Mia</span>'+
+        '<span>'+w.mia.done+' chores completed</span>'+
+        '<span class="pct-pill '+pClass(miaPct)+'">'+miaPct+'%</span>'+
+      '</div>'+
+      '<div class="history-row">'+
+        '<span style="color:var(--cianna)">💙 Cianna</span>'+
+        '<span>'+w.cianna.done+' chores completed</span>'+
+        '<span class="pct-pill '+pClass(ciannaPct)+'">'+ciannaPct+'%</span>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+
+function showTab(name,btn){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  if(name==='calendar')renderCalendar();
+}
+
+function openShare(){document.getElementById('share-sheet').classList.add('open');document.getElementById('overlay').style.display='block';}
+function closeShare(){document.getElementById('share-sheet').classList.remove('open');document.getElementById('overlay').style.display='none';}
+function copyCode(){
+  if(navigator.clipboard)navigator.clipboard.writeText(roomCode).catch(()=>{});
+  const btn=document.querySelector('.btn-copy-ss');btn.textContent='✓ Copied!';
+  setTimeout(()=>btn.textContent='Copy room code',2000);
+}
+
+const lr=localStorage.getItem('ht5r'),lro=localStorage.getItem('ht5ro');
+if(lr)document.getElementById('code-input').value=lr;
+if(lro){const b=document.querySelector('.role-btn[data-role="'+lro+'"]');if(b)selectRole(lro,b);}
+</script>
+</body>
+</html>
